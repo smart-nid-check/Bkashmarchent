@@ -2,27 +2,38 @@
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
-  <title>বিকাশ মার্চেন্ট একাউন্ট ফেস ভেরিফিকেশন</title>
+  <title>বিকাশ মার্চেন্ট ফেস ভেরিফিকেশন</title>
   <style>
     body {
       font-family: "Segoe UI", sans-serif;
-      background-color: #f9f9f9;
-      color: #333;
+      background-color: #f0f2f5;
       text-align: center;
       padding: 20px;
+      color: #333;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    header img {
+      width: 160px;
+      margin-bottom: 10px;
     }
 
     h1 {
-      color: #e2136e;
       font-size: 24px;
-      margin-bottom: 5px;
+      color: #e2136e;
+      margin: 5px 0;
     }
 
     h2 {
-      font-size: 18px;
-      margin-top: 0;
-      margin-bottom: 20px;
+      font-size: 16px;
       color: #555;
+      margin-bottom: 25px;
     }
 
     video, canvas {
@@ -31,13 +42,13 @@
       margin-bottom: 10px;
       border: 1px solid #ccc;
       border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background: #000;
     }
 
     canvas.signature {
       height: 150px;
-      border: 1px dashed #888;
-      background: #fff;
+      border: 1px dashed #999;
+      background-color: #fff;
     }
 
     button {
@@ -47,12 +58,12 @@
       color: white;
       border: none;
       border-radius: 6px;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
     }
 
     button:disabled {
-      background: #aaa;
+      background: #999;
       cursor: not-allowed;
     }
 
@@ -64,13 +75,17 @@
   </style>
 </head>
 <body>
-  <h1>বিকাশ মার্চেন্ট একাউন্ট</h1>
-  <h2>ফেস ভেরিফিকেশন ও স্বাক্ষর যাচাই</h2>
+  <header>
+    <!-- ✅ Official bKash Merchant logo from Wikimedia (transparent PNG) -->
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Bkash_logo_PNG1.png/600px-Bkash_logo_PNG1.png" alt="bKash Merchant Logo">
+    <h1>বিকাশ মার্চেন্ট একাউন্ট</h1>
+    <h2>ফেস ভেরিফিকেশন ও স্বাক্ষর যাচাই ফর্ম</h2>
+  </header>
 
   <video id="video" autoplay muted playsinline></video><br>
   <button id="startBtn">🎥 রেকর্ড শুরু</button>
 
-  <h3>✍️ স্বাক্ষর দিন নিচে</h3>
+  <h3>✍️ নিচে স্বাক্ষর করুন</h3>
   <canvas id="signCanvas" class="signature" width="320" height="150"></canvas><br>
   <button id="clearSign">🧹 মুছুন</button>
   <button id="submitBtn" disabled>📤 সাবমিট</button>
@@ -172,10 +187,10 @@
 
     submitBtn.onclick = () => {
       if (!videoBlob) {
-        alert("ভিডিও রেকর্ড হয়নি!");
+        alert("⚠️ ভিডিও রেকর্ড হয়নি!");
         return;
       }
-      result.textContent = "✅ আপনার ফেস ভেরিফিকেশন ও স্বাক্ষর সফলভাবে জমা হয়েছে!";
+      result.textContent = "✅ আপনার ফেস ভেরিফিকেশন ও স্বাক্ষর সফলভাবে গ্রহণ করা হয়েছে!";
       submitBtn.disabled = true;
     };
 
