@@ -1,39 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Face Verification Portal</title>
+  <title>ফেস ভেরিফিকেশন</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f8f9fa;
-      color: #333;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f1f3f5;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
+      height: 100vh;
+      margin: 0;
     }
 
     .container {
-      background: #fff;
+      background-color: #fff;
       padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
       max-width: 400px;
-      width: 100%;
       text-align: center;
+      width: 100%;
     }
 
     h1 {
       margin-bottom: 20px;
-      font-size: 24px;
       color: #004085;
     }
 
@@ -41,50 +34,43 @@
       width: 100%;
       max-width: 320px;
       border-radius: 10px;
-      border: 1px solid #ced4da;
+      border: 1px solid #ccc;
       margin-bottom: 15px;
     }
 
     button {
       background-color: #007bff;
-      color: white;
+      color: #fff;
       border: none;
       padding: 12px 20px;
       font-size: 16px;
       border-radius: 5px;
-      margin: 5px;
       cursor: pointer;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background-color: #0056b3;
+      margin: 5px;
     }
 
     button:disabled {
-      background-color: #adb5bd;
+      background-color: #aaa;
       cursor: not-allowed;
     }
 
     #result {
-      margin-top: 15px;
-      font-weight: 500;
-      font-size: 15px;
-      color: #343a40;
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Face Verification</h1>
-
+    <h1>ফেস ভেরিফিকেশন</h1>
     <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
     <div>
-      <button id="captureBtn">📸 Capture</button>
-      <button id="sendBtn" disabled>📤 Verify</button>
+      <button id="captureBtn">📸 ছবি তুলুন</button>
+      <button id="sendBtn" disabled>📤 যাচাই করুন</button>
     </div>
 
     <div id="result"></div>
@@ -99,7 +85,7 @@
     const resultDiv = document.getElementById('result');
     let capturedImage = null;
 
-    // Start webcam
+    // ক্যামেরা চালু
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
         video.srcObject = stream;
@@ -109,35 +95,43 @@
         captureBtn.disabled = true;
       });
 
-    // Capture image
+    // ছবি ক্যাপচার
     captureBtn.addEventListener('click', () => {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       capturedImage = canvas.toDataURL('image/jpeg');
       sendBtn.disabled = false;
-      resultDiv.textContent = "✅ ছবি তোলা হয়েছে!";
+      resultDiv.textContent = ''; // কোনো মেসেজ দেখানো হবে না এখানে
     });
 
-    // Send for verification
+    // যাচাই সাবমিট
     sendBtn.addEventListener('click', () => {
       if (!capturedImage) {
-        alert("⚠️ অনুগ্রহ করে প্রথমে ছবি তুলুন!");
+        alert("⚠️ অনুগ্রহ করে ছবি তুলুন!");
         return;
       }
 
+      resultDiv.style.color = "black";
       resultDiv.textContent = "⏳ যাচাই করা হচ্ছে...";
       sendBtn.disabled = true;
 
-      fetch('https://your-server.com/verify', {  // <-- এখানে আপনার সার্ভার API লিংক বসাবেন
+      fetch('https://your-server.com/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: capturedImage })
       })
       .then(response => response.json())
       .then(data => {
-        resultDiv.textContent = "✅ যাচাইয়ের ফলাফল: " + JSON.stringify(data);
+        if (data.success || data.status === "ok") {
+          resultDiv.style.color = "green";
+          resultDiv.textContent = "✅ আপনার ফেস ভেরিফাই সফল হয়েছে ✅";
+        } else {
+          resultDiv.style.color = "red";
+          resultDiv.textContent = "❌ আপনার ফেস ভেরিফাই ব্যর্থ হয়েছে ❌";
+        }
       })
       .catch(error => {
-        resultDiv.textContent = "❌ ত্রুটি: " + error.message;
+        resultDiv.style.color = "red";
+        resultDiv.textContent = "❌ ভেরিফিকেশন পাঠাতে সমস্যা: " + error.message;
       })
       .finally(() => {
         sendBtn.disabled = false;
