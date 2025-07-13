@@ -1,19 +1,29 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Face Verification</title>
   <style>
     video, canvas {
       display: block;
       margin: 10px auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
     }
     button {
       display: block;
-      margin: 10px auto;
-      padding: 10px 20px;
-      font-size: 16px;
+      margin: 15px auto;
+      padding: 12px 25px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 5px;
+    }
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
     }
   </style>
 </head>
@@ -23,52 +33,63 @@
 
   <video id="video" width="320" height="240" autoplay></video>
   <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-  
-  <button onclick="captureImage()">📸 Capture Image</button>
-  <button onclick="sendToServer()">📤 Send for Verification</button>
+
+  <button id="captureBtn">📸 Capture Image</button>
+  <button id="sendBtn" disabled>📤 Send for Verification</button>
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const context = canvas.getContext('2d');
-    let capturedImage = null;
+    const captureBtn = document.getElementById('captureBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const ctx = canvas.getContext('2d');
+    let capturedImageDataUrl = null;
 
-    // Start camera with error handling
+    // ক্যামেরা চালু করার চেষ্টা
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
         video.srcObject = stream;
       })
-      .catch(error => {
-        alert("Camera error: " + error.message);
+      .catch(err => {
+        alert("ক্যামেরা চালাতে সমস্যা: " + err.message);
+        captureBtn.disabled = true;
       });
 
-    // Capture image from video
-    function captureImage() {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      capturedImage = canvas.toDataURL('image/jpeg');
-      alert('Image Captured!');
-    }
+    // ছবি তুলার ফাংশন
+    captureBtn.addEventListener('click', () => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      capturedImageDataUrl = canvas.toDataURL('image/jpeg');
+      alert("ছবি তুলা হয়েছে!");
+      sendBtn.disabled = false;
+    });
 
-    // Send to server
-    function sendToServer() {
-      if (!capturedImage) {
-        alert("Please capture image first.");
+    // ছবি সার্ভারে পাঠানোর ফাংশন
+    sendBtn.addEventListener('click', () => {
+      if (!capturedImageDataUrl) {
+        alert("প্রথমে ছবি তুলুন!");
         return;
       }
 
-      fetch('https://your-server.com/verify', {
+      sendBtn.disabled = true;
+      sendBtn.textContent = "পাঠানো হচ্ছে...";
+
+      fetch('https://your-server.com/verify', {  // <-- আপনার সার্ভার API URL দিন এখানে
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: capturedImage })
+        body: JSON.stringify({ image: capturedImageDataUrl })
       })
       .then(response => response.json())
       .then(data => {
-        alert("Verification Result: " + JSON.stringify(data));
+        alert("ভেরিফিকেশন ফলাফল: " + JSON.stringify(data));
       })
-      .catch(error => {
-        alert("Error: " + error);
+      .catch(err => {
+        alert("ভেরিফিকেশন পাঠাতে সমস্যা: " + err.message);
+      })
+      .finally(() => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "📤 Send for Verification";
       });
-    }
+    });
   </script>
 
 </body>
