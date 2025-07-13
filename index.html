@@ -15,7 +15,7 @@
 <body>
   <h2>অটো ফেস ভেরিফিকেশন ও স্বাক্ষর</h2>
 
-  <video id="video" autoplay muted></video><br>
+  <video id="video" autoplay muted playsinline></video><br>
 
   <h3>✍️ স্বাক্ষর দিন</h3>
   <canvas id="signCanvas" class="signature" width="320" height="150"></canvas><br>
@@ -42,13 +42,17 @@
 
     // ক্যামেরা চালু ও মডেল লোড
     async function startCameraAndModels() {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
-      stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-      video.srcObject = stream;
-      video.style.display = 'block';
-      video.play();
+      try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        video.srcObject = stream;
+        video.style.display = 'block';
+        video.play();
 
-      detectFace();
+        detectFace();
+      } catch (err) {
+        alert("ক্যামেরা চালানো যাচ্ছে না: " + err.message);
+      }
     }
 
     // ফেস ডিটেকশন ও অটো রেকর্ডিং
@@ -134,8 +138,7 @@
       if (!videoBlob) return alert('⚠️ ভিডিও রেকর্ড করেননি!');
       if (signCanvasIsEmpty()) return alert('⚠️ স্বাক্ষর দিন!');
 
-      // এখানে আপনি API কল বা টেলিগ্রাম পাঠাতে পারেন,
-      // এখন ডেমো মোডে শুধুমাত্র success মেসেজ দেখাবো
+      // এখানে API কল বা অন্য লজিক যাবে। এখন শুধু সফলতার মেসেজ দেখাবো।
 
       result.textContent = '📤 যাচাই চলছে...';
 
@@ -145,7 +148,7 @@
       }, 1000);
     };
 
-    // পেজ লোডে ক্যামেরা ও মডেল শুরু
+    // পেজ লোডে শুরু করো
     startCameraAndModels();
   </script>
 </body>
