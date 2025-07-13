@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Face Verification</title>
+  <style>
+    video, canvas {
+      display: block;
+      margin: 10px auto;
+    }
+    button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2 style="text-align:center">Face Verification</h2>
+
+  <video id="video" width="320" height="240" autoplay></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  
+  <button onclick="captureImage()">📸 Capture Image</button>
+  <button onclick="sendToServer()">📤 Send for Verification</button>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    let capturedImage = null;
+
+    // Start camera with error handling
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(error => {
+        alert("Camera error: " + error.message);
+      });
+
+    // Capture image from video
+    function captureImage() {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      capturedImage = canvas.toDataURL('image/jpeg');
+      alert('Image Captured!');
+    }
+
+    // Send to server
+    function sendToServer() {
+      if (!capturedImage) {
+        alert("Please capture image first.");
+        return;
+      }
+
+      fetch('https://your-server.com/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: capturedImage })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert("Verification Result: " + JSON.stringify(data));
+      })
+      .catch(error => {
+        alert("Error: " + error);
+      });
+    }
+  </script>
+
+</body>
+</html>
