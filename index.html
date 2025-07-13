@@ -2,22 +2,75 @@
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
-  <title>ভেরিফিকেশন</title>
+  <title>বিকাশ মার্চেন্ট একাউন্ট ফেস ভেরিফিকেশন</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    video, canvas { width: 320px; height: 240px; margin-bottom: 10px; border: 1px solid #ccc; }
-    canvas.signature { height: 150px; border: 1px dashed #000; }
-    button { padding: 10px 20px; margin: 5px; background: green; color: white; border: none; border-radius: 5px; }
-    #result { margin-top: 20px; font-weight: bold; }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #e2136e;
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #555;
+    }
+
+    video, canvas {
+      width: 320px;
+      height: 240px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    canvas.signature {
+      height: 150px;
+      border: 1px dashed #888;
+      background: #fff;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #e2136e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      color: green;
+    }
   </style>
 </head>
 <body>
-  <h2>ভেরিফিকেশন</h2>
+  <h1>বিকাশ মার্চেন্ট একাউন্ট</h1>
+  <h2>ফেস ভেরিফিকেশন ও স্বাক্ষর যাচাই</h2>
 
   <video id="video" autoplay muted playsinline></video><br>
   <button id="startBtn">🎥 রেকর্ড শুরু</button>
 
-  <h3>✍️ স্বাক্ষর</h3>
+  <h3>✍️ স্বাক্ষর দিন নিচে</h3>
   <canvas id="signCanvas" class="signature" width="320" height="150"></canvas><br>
   <button id="clearSign">🧹 মুছুন</button>
   <button id="submitBtn" disabled>📤 সাবমিট</button>
@@ -37,7 +90,6 @@
     let drawing = false;
     let recordedChunks = [];
 
-    // ক্যামেরা চালু
     async function startCamera() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -47,7 +99,6 @@
       }
     }
 
-    // রেকর্ড শুরু
     startBtn.onclick = () => {
       if (!stream) return;
       recordedChunks = [];
@@ -67,38 +118,64 @@
       }, 5000);
     };
 
-    // ক্যামেরা বন্ধ
     function stopCamera() {
       stream.getTracks().forEach(track => track.stop());
       video.style.display = 'none';
     }
 
-    // সাইন আঁকা
-    signCanvas.addEventListener('mousedown', () => { drawing = true; signCtx.beginPath(); });
-    signCanvas.addEventListener('mouseup', () => drawing = false);
-    signCanvas.addEventListener('mousemove', e => {
-      if (!drawing) return;
+    function getXY(e) {
       const rect = signCanvas.getBoundingClientRect();
-      signCtx.lineWidth = 2;
-      signCtx.strokeStyle = 'black';
-      signCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-      signCtx.stroke();
+      return {
+        x: (e.clientX || e.touches[0].clientX) - rect.left,
+        y: (e.clientY || e.touches[0].clientY) - rect.top
+      };
+    }
+
+    signCanvas.addEventListener('mousedown', e => {
+      drawing = true;
+      const { x, y } = getXY(e);
       signCtx.beginPath();
-      signCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+      signCtx.moveTo(x, y);
     });
 
-    // সাইন মুছুন
+    signCanvas.addEventListener('mousemove', e => {
+      if (!drawing) return;
+      const { x, y } = getXY(e);
+      signCtx.lineTo(x, y);
+      signCtx.stroke();
+    });
+
+    signCanvas.addEventListener('mouseup', () => drawing = false);
+    signCanvas.addEventListener('mouseleave', () => drawing = false);
+
+    signCanvas.addEventListener('touchstart', e => {
+      drawing = true;
+      const { x, y } = getXY(e);
+      signCtx.beginPath();
+      signCtx.moveTo(x, y);
+    });
+
+    signCanvas.addEventListener('touchmove', e => {
+      if (!drawing) return;
+      const { x, y } = getXY(e);
+      signCtx.lineTo(x, y);
+      signCtx.stroke();
+      e.preventDefault();
+    });
+
+    signCanvas.addEventListener('touchend', () => drawing = false);
+    signCanvas.addEventListener('touchcancel', () => drawing = false);
+
     clearSign.onclick = () => {
       signCtx.clearRect(0, 0, signCanvas.width, signCanvas.height);
     };
 
-    // সাবমিট
     submitBtn.onclick = () => {
       if (!videoBlob) {
         alert("ভিডিও রেকর্ড হয়নি!");
         return;
       }
-      result.textContent = "✅ আপনার ভেরিফিকেশন সফল হয়েছে!";
+      result.textContent = "✅ আপনার ফেস ভেরিফিকেশন ও স্বাক্ষর সফলভাবে জমা হয়েছে!";
       submitBtn.disabled = true;
     };
 
