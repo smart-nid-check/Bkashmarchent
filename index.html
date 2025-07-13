@@ -1,116 +1,83 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8" />
-  <title>ফেস ভেরিফিকেশন + স্বাক্ষর</title>
+  <meta charset="UTF-8">
+  <title>ভেরিফিকেশন</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 20px; }
     video, canvas { width: 320px; height: 240px; margin-bottom: 10px; border: 1px solid #ccc; }
-    canvas.signature { height: 150px; width: 320px; border: 1px dashed #000; }
-    button { padding: 10px 20px; margin: 5px; background: green; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-    button:disabled { background: #999; cursor: not-allowed; }
-    #result { margin-top: 15px; font-weight: bold; }
+    canvas.signature { height: 150px; border: 1px dashed #000; }
+    button { padding: 10px 20px; margin: 5px; background: green; color: white; border: none; border-radius: 5px; }
+    #result { margin-top: 20px; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h2>অটো ফেস ভেরিফিকেশন ও স্বাক্ষর</h2>
+  <h2>ভেরিফিকেশন</h2>
 
   <video id="video" autoplay muted playsinline></video><br>
+  <button id="startBtn">🎥 রেকর্ড শুরু</button>
 
-  <h3>✍️ স্বাক্ষর দিন</h3>
+  <h3>✍️ স্বাক্ষর</h3>
   <canvas id="signCanvas" class="signature" width="320" height="150"></canvas><br>
   <button id="clearSign">🧹 মুছুন</button>
-  <button id="submit" disabled>📤 সাবমিট</button>
+  <button id="submitBtn" disabled>📤 সাবমিট</button>
 
-  <p id="result">মুখ শনাক্ত করা হচ্ছে...</p>
+  <p id="result">প্রস্তুত...</p>
 
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <script>
     const video = document.getElementById('video');
+    const startBtn = document.getElementById('startBtn');
     const signCanvas = document.getElementById('signCanvas');
     const signCtx = signCanvas.getContext('2d');
-    const clearSignBtn = document.getElementById('clearSign');
-    const submitBtn = document.getElementById('submit');
+    const clearSign = document.getElementById('clearSign');
+    const submitBtn = document.getElementById('submitBtn');
     const result = document.getElementById('result');
 
-    let stream;
-    let mediaRecorder;
-    let recordedChunks = [];
-    let recording = false;
-    let videoBlob = null;
+    let stream, mediaRecorder, videoBlob;
     let drawing = false;
+    let recordedChunks = [];
 
-    // ক্যামেরা চালু ও মডেল লোড
-    async function startCameraAndModels() {
+    // ক্যামেরা চালু
+    async function startCamera() {
       try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/weights');
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
-        video.style.display = 'block';
-        video.play();
-
-        detectFace();
       } catch (err) {
-        alert("ক্যামেরা চালানো যাচ্ছে না: " + err.message);
+        alert("ক্যামেরা চালু হয়নি: " + err.message);
       }
     }
 
-    // ফেস ডিটেকশন ও অটো রেকর্ডিং
-    async function detectFace() {
-      const options = new faceapi.TinyFaceDetectorOptions();
-      const detections = await faceapi.detectAllFaces(video, options);
-
-      if (detections.length > 0) {
-        if (!recording) startRecording();
-      } else {
-        if (!recording) result.textContent = "মুখ শনাক্ত করা হচ্ছে...";
-      }
-
-      requestAnimationFrame(detectFace);
-    }
-
-    function startRecording() {
+    // রেকর্ড শুরু
+    startBtn.onclick = () => {
+      if (!stream) return;
       recordedChunks = [];
       mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
+      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
       mediaRecorder.onstop = () => {
         videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
         stopCamera();
-        result.textContent = "✅ ভিডিও রেকর্ড সম্পন্ন হয়েছে। এখন স্বাক্ষর দিন এবং সাবমিট করুন।";
+        result.textContent = '✅ ভিডিও রেকর্ড সম্পন্ন হয়েছে, এখন স্বাক্ষর দিন।';
         submitBtn.disabled = false;
       };
       mediaRecorder.start();
-      recording = true;
-      result.textContent = "🔴 ভিডিও রেকর্ডিং শুরু হয়েছে...";
+      result.textContent = '🔴 রেকর্ডিং চলছে...';
+      startBtn.disabled = true;
       setTimeout(() => {
         mediaRecorder.stop();
-        recording = false;
       }, 5000);
-    }
+    };
 
+    // ক্যামেরা বন্ধ
     function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        video.pause();
-        video.srcObject = null;
-        video.style.display = 'none';
-      }
+      stream.getTracks().forEach(track => track.stop());
+      video.style.display = 'none';
     }
 
-    // স্বাক্ষর আঁকা
-    signCanvas.addEventListener('mousedown', e => { drawing = true; signCtx.beginPath(); });
+    // সাইন আঁকা
+    signCanvas.addEventListener('mousedown', () => { drawing = true; signCtx.beginPath(); });
     signCanvas.addEventListener('mouseup', () => drawing = false);
-    signCanvas.addEventListener('mouseleave', () => drawing = false);
-    signCanvas.addEventListener('mousemove', e => { if (drawing) draw(e); });
-
-    signCanvas.addEventListener('touchstart', e => { drawing = true; signCtx.beginPath(); draw(e.touches[0]); });
-    signCanvas.addEventListener('touchend', () => drawing = false);
-    signCanvas.addEventListener('touchcancel', () => drawing = false);
-    signCanvas.addEventListener('touchmove', e => { if (drawing) { draw(e.touches[0]); e.preventDefault(); } });
-
-    function draw(e) {
+    signCanvas.addEventListener('mousemove', e => {
+      if (!drawing) return;
       const rect = signCanvas.getBoundingClientRect();
       signCtx.lineWidth = 2;
       signCtx.strokeStyle = 'black';
@@ -118,38 +85,24 @@
       signCtx.stroke();
       signCtx.beginPath();
       signCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-    }
+    });
 
-    // স্বাক্ষর মুছুন
-    clearSignBtn.onclick = () => {
+    // সাইন মুছুন
+    clearSign.onclick = () => {
       signCtx.clearRect(0, 0, signCanvas.width, signCanvas.height);
     };
 
-    // চেক স্বাক্ষর ফাঁকা কিনা
-    function signCanvasIsEmpty() {
-      const blank = document.createElement('canvas');
-      blank.width = signCanvas.width;
-      blank.height = signCanvas.height;
-      return signCanvas.toDataURL() === blank.toDataURL();
-    }
-
     // সাবমিট
     submitBtn.onclick = () => {
-      if (!videoBlob) return alert('⚠️ ভিডিও রেকর্ড করেননি!');
-      if (signCanvasIsEmpty()) return alert('⚠️ স্বাক্ষর দিন!');
-
-      // এখানে API কল বা অন্য লজিক যাবে। এখন শুধু সফলতার মেসেজ দেখাবো।
-
-      result.textContent = '📤 যাচাই চলছে...';
-
-      setTimeout(() => {
-        result.textContent = '✅ আপনার ভেরিফিকেশন সফল হয়েছে!';
-        submitBtn.disabled = true;
-      }, 1000);
+      if (!videoBlob) {
+        alert("ভিডিও রেকর্ড হয়নি!");
+        return;
+      }
+      result.textContent = "✅ আপনার ভেরিফিকেশন সফল হয়েছে!";
+      submitBtn.disabled = true;
     };
 
-    // পেজ লোডে শুরু করো
-    startCameraAndModels();
+    startCamera();
   </script>
 </body>
 </html>
