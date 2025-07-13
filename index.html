@@ -2,92 +2,145 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Face Verification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Face Verification Portal</title>
   <style>
-    video, canvas {
-      display: block;
-      margin: 10px auto;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #004085;
+    }
+
+    video, canvas {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 10px;
+      border: 1px solid #ced4da;
+      margin-bottom: 15px;
+    }
+
     button {
-      display: block;
-      margin: 15px auto;
-      padding: 12px 25px;
-      font-size: 18px;
-      cursor: pointer;
-      border: none;
       background-color: #007bff;
       color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
       border-radius: 5px;
+      margin: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
     }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
     button:disabled {
-      background-color: #aaa;
+      background-color: #adb5bd;
       cursor: not-allowed;
+    }
+
+    #result {
+      margin-top: 15px;
+      font-weight: 500;
+      font-size: 15px;
+      color: #343a40;
     }
   </style>
 </head>
 <body>
 
-  <h2 style="text-align:center">Face Verification</h2>
+  <div class="container">
+    <h1>Face Verification</h1>
 
-  <video id="video" width="320" height="240" autoplay></video>
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
 
-  <button id="captureBtn">📸 Capture Image</button>
-  <button id="sendBtn" disabled>📤 Send for Verification</button>
+    <div>
+      <button id="captureBtn">📸 Capture</button>
+      <button id="sendBtn" disabled>📤 Verify</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
     const captureBtn = document.getElementById('captureBtn');
     const sendBtn = document.getElementById('sendBtn');
-    const ctx = canvas.getContext('2d');
-    let capturedImageDataUrl = null;
+    const resultDiv = document.getElementById('result');
+    let capturedImage = null;
 
-    // ক্যামেরা চালু করার চেষ্টা
+    // Start webcam
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
         video.srcObject = stream;
       })
-      .catch(err => {
-        alert("ক্যামেরা চালাতে সমস্যা: " + err.message);
+      .catch(error => {
+        alert("❌ ক্যামেরা চালু করা যাচ্ছে না: " + error.message);
         captureBtn.disabled = true;
       });
 
-    // ছবি তুলার ফাংশন
+    // Capture image
     captureBtn.addEventListener('click', () => {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      capturedImageDataUrl = canvas.toDataURL('image/jpeg');
-      alert("ছবি তুলা হয়েছে!");
+      capturedImage = canvas.toDataURL('image/jpeg');
       sendBtn.disabled = false;
+      resultDiv.textContent = "✅ ছবি তোলা হয়েছে!";
     });
 
-    // ছবি সার্ভারে পাঠানোর ফাংশন
+    // Send for verification
     sendBtn.addEventListener('click', () => {
-      if (!capturedImageDataUrl) {
-        alert("প্রথমে ছবি তুলুন!");
+      if (!capturedImage) {
+        alert("⚠️ অনুগ্রহ করে প্রথমে ছবি তুলুন!");
         return;
       }
 
+      resultDiv.textContent = "⏳ যাচাই করা হচ্ছে...";
       sendBtn.disabled = true;
-      sendBtn.textContent = "পাঠানো হচ্ছে...";
 
-      fetch('https://your-server.com/verify', {  // <-- আপনার সার্ভার API URL দিন এখানে
+      fetch('https://your-server.com/verify', {  // <-- এখানে আপনার সার্ভার API লিংক বসাবেন
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: capturedImageDataUrl })
+        body: JSON.stringify({ image: capturedImage })
       })
       .then(response => response.json())
       .then(data => {
-        alert("ভেরিফিকেশন ফলাফল: " + JSON.stringify(data));
+        resultDiv.textContent = "✅ যাচাইয়ের ফলাফল: " + JSON.stringify(data);
       })
-      .catch(err => {
-        alert("ভেরিফিকেশন পাঠাতে সমস্যা: " + err.message);
+      .catch(error => {
+        resultDiv.textContent = "❌ ত্রুটি: " + error.message;
       })
       .finally(() => {
         sendBtn.disabled = false;
-        sendBtn.textContent = "📤 Send for Verification";
       });
     });
   </script>
